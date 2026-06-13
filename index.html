@@ -277,14 +277,24 @@
 
       <div class="field">
         <label>Structure Type — used in folder path &amp; type field</label>
-        <input type="text" id="structureType" placeholder="laboratory" oninput="render()">
+        <select id="roomType" onchange="render()">
+            <option value="laboratory">Laboratory</option>
+            <option value="overgrown">Overgrown</option>
+            <option value="manor">Manor</option>
+            <option value="frozen">Frozen Depths</option>
+            <option value="molten">Molten Mines</option>
+            <option value="crimson">Crimson Heart</option>
+          </select>
       </div>
 
-      <div class="field">
-        <label>Room Type</label>
-        <input type="text" id="roomType" placeholder="hallway" oninput="render()">
+       <div class="field">
+          <label>Room Type</label>
+          <select id="roomType" onchange="render()">
+            <option value="main">Main</option>
+            <option value="hallway">Hallway</option>
+            <option value="dead_end">Dead End</option>
+          </select>
       </div>
-    </div>
 
     <div class="field-group">
       <div class="section-header">Flags &amp; Weight</div>
@@ -298,15 +308,15 @@
         <div class="field">
           <label>Start Room</label>
           <select id="start" onchange="render()">
-            <option value="false">false</option>
-            <option value="true">true</option>
+            <option value="false">False</option>
+            <option value="true">True</option>
           </select>
         </div>
         <div class="field">
           <label>End Room</label>
           <select id="end" onchange="render()">
-            <option value="false">false</option>
-            <option value="true">true</option>
+            <option value="false">False</option>
+            <option value="true">True</option>
           </select>
         </div>
       </div>
@@ -417,8 +427,6 @@
             <option>SOUTH</option>
             <option>EAST</option>
             <option>WEST</option>
-            <option>UP</option>
-            <option>DOWN</option>
           </select>
         </div>
       </div>
@@ -467,7 +475,7 @@
         <div class="grid-2">
           <div class="field">
             <label>Spawn Table</label>
-            <input type="text" id="s${id}_table" placeholder="lab_easy_mobs" oninput="render()">
+            <input type="text" id="s${id}_table" placeholder="lab_mobs" oninput="render()">
           </div>
           <div class="field">
             <label>Chance (0–1)</label>
