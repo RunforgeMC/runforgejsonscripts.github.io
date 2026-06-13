@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Room JSON Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #0a0e14;
+      --surface:    #141a22;
+      --surface-2:  #1a2130;
+      --border:     #253040;
+      --accent:     #00c8ff;
+      --accent-dim: rgba(0,200,255,0.08);
+      --text:       #cdd9e5;
+      --muted:      #5d7a90;
+      --add:        #4dffa8;
+      --danger:     #ff5f72;
+      --mono: 'JetBrains Mono', 'Courier New', monospace;
+      --sans: 'Inter', system-ui, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 18px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .pulse-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 6px var(--accent);
+      animation: blink 2.2s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    header h1 {
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+    }
+
+    header p {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      margin-left: auto;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      flex: 1;
+      overflow: hidden;
+      height: calc(100vh - 57px);
+    }
+
+    /* ── FORM PANEL ── */
+    .form-panel {
+      overflow-y: auto;
+      padding: 28px 30px;
+      border-right: 1px solid var(--border);
+    }
+
+    .section-header {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .field-group { margin-bottom: 26px; }
+
+    .field { margin-bottom: 12px; }
+
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      font-family: var(--mono);
+      margin-bottom: 5px;
+      letter-spacing: 0.04em;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      padding: 8px 11px;
+      border-radius: 5px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(0,200,255,0.1);
+    }
+
+    select {
+      appearance: none;
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235d7a90'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 11px center;
+      padding-right: 28px;
+    }
+
+    .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* ── DYNAMIC SECTIONS ── */
+    .dyn-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .dyn-header .section-header { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
+
+    .entry-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+
+    .entry-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .entry-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .btn { font-family: var(--mono); font-size: 12px; font-weight: 500; padding: 6px 13px; border-radius: 4px; border: 1px solid; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+
+    .btn-add   { color: var(--add);    border-color: var(--add);    background: rgba(77,255,168,0.06); }
+    .btn-add:hover { background: rgba(77,255,168,0.14); }
+
+    .btn-remove { color: var(--danger); border-color: transparent; background: transparent; padding: 4px 8px; font-size: 11px; }
+    .btn-remove:hover { background: rgba(255,95,114,0.12); border-color: var(--danger); }
+
+    .empty-state {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      padding: 10px 0;
+    }
+
+    /* ── JSON PANEL ── */
+    .json-panel {
+      display: flex;
+      flex-direction: column;
+      background: #0d1117;
+      overflow: hidden;
+    }
+
+    .json-toolbar {
+      position: sticky;
+      top: 0;
+      background: #0d1117;
+      border-bottom: 1px solid var(--border);
+      padding: 13px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .json-filename {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .btn-copy {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 16px;
+      border-radius: 4px;
+      border: 1px solid var(--accent);
+      background: var(--accent-dim);
+      color: var(--accent);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-copy:hover { background: rgba(0,200,255,0.16); }
+    .btn-copy.ok { color: var(--add); border-color: var(--add); background: rgba(77,255,168,0.08); }
+
+    .json-output {
+      flex: 1;
+      overflow-y: auto;
+      padding: 22px 24px;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.85;
+      white-space: pre;
+    }
+
+    /* Syntax highlight */
+    .jk  { color: #79c0ff; }
+    .js  { color: #a8d8ea; }
+    .jn  { color: #f0a855; }
+    .jb  { color: #ff9580; }
+    .jp  { color: #6e8399; }
+
+    @media (max-width: 800px) {
+      .layout { grid-template-columns: 1fr; height: auto; overflow: visible; }
+      .form-panel { border-right: none; border-bottom: 1px solid var(--border); }
+      .json-panel { min-height: 60vh; }
+      header p { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="pulse-dot"></div>
+  <h1>Room JSON Builder</h1>
+  <p>// fill the form → copy the output</p>
+</header>
+
+<div class="layout">
+
+  <!-- ══════════════ FORM ══════════════ -->
+  <div class="form-panel">
+
+    <div class="field-group">
+      <div class="section-header">Identity</div>
+
+      <div class="field">
+        <label>Room Name — used in id &amp; file path</label>
+        <input type="text" id="roomName" placeholder="lab_corridor" oninput="render()">
+      </div>
+
+      <div class="field">
+        <label>Structure Type — used in folder path &amp; type field</label>
+        <input type="text" id="structureType" placeholder="laboratory" oninput="render()">
+      </div>
+
+      <div class="field">
+        <label>Room Type</label>
+        <input type="text" id="roomType" placeholder="hallway" oninput="render()">
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="section-header">Flags &amp; Weight</div>
+
+      <div class="field">
+        <label>Weight</label>
+        <input type="number" id="weight" placeholder="1.0" step="0.1" min="0" oninput="render()">
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label>Start Room</label>
+          <select id="start" onchange="render()">
+            <option value="false">false</option>
+            <option value="true">true</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>End Room</label>
+          <select id="end" onchange="render()">
+            <option value="false">false</option>
+            <option value="true">true</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="section-header">Size (blocks)</div>
+      <div class="grid-3">
+        <div class="field">
+          <label>X width</label>
+          <input type="number" id="sizeX" placeholder="9" oninput="render()">
+        </div>
+        <div class="field">
+          <label>Y height</label>
+          <input type="number" id="sizeY" placeholder="5" oninput="render()">
+        </div>
+        <div class="field">
+          <label>Z length</label>
+          <input type="number" id="sizeZ" placeholder="15" oninput="render()">
+        </div>
+      </div>
+    </div>
+
+    <!-- CONNECTORS -->
+    <div class="field-group">
+      <div class="dyn-header">
+        <div class="section-header">Connectors</div>
+        <button class="btn btn-add" onclick="addConnector()">+ Add Connector</button>
+      </div>
+      <div id="connectors-list">
+        <div class="empty-state">No connectors yet.</div>
+      </div>
+    </div>
+
+    <!-- SPAWNERS -->
+    <div class="field-group">
+      <div class="dyn-header">
+        <div class="section-header">Spawners</div>
+        <button class="btn btn-add" onclick="addSpawner()">+ Add Spawner</button>
+      </div>
+      <div id="spawners-list">
+        <div class="empty-state">No spawners yet.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════ JSON PREVIEW ══════════════ -->
+  <div class="json-panel">
+    <div class="json-toolbar">
+      <span class="json-filename">output.json</span>
+      <button class="btn-copy" id="copyBtn" onclick="copyJSON()">Copy JSON</button>
+    </div>
+    <div class="json-output" id="json-output"></div>
+  </div>
+
+</div>
+
+<script>
+  let connectors = [];
+  let spawners   = [];
+  let cId = 0;
+  let sId = 0;
+
+  // ── CONNECTORS ──────────────────────────────
+  function addConnector() {
+    connectors.push(cId++);
+    drawConnectors();
+    render();
+  }
+
+  function removeConnector(id) {
+    connectors = connectors.filter(c => c !== id);
+    drawConnectors();
+    render();
+  }
+
+  function drawConnectors() {
+    const el = document.getElementById('connectors-list');
+    if (connectors.length === 0) {
+      el.innerHTML = '<div class="empty-state">No connectors yet.</div>';
+      return;
+    }
+    el.innerHTML = connectors.map((id, i) => `
+      <div class="entry-card">
+        <div class="entry-top">
+          <span class="entry-label">connector[${i}]</span>
+          <button class="btn btn-remove" onclick="removeConnector(${id})">✕ Remove</button>
+        </div>
+        <div class="grid-3" style="margin-bottom:10px">
+          <div class="field">
+            <label>X</label>
+            <input type="number" id="c${id}_x" placeholder="0" oninput="render()">
+          </div>
+          <div class="field">
+            <label>Y</label>
+            <input type="number" id="c${id}_y" placeholder="0" oninput="render()">
+          </div>
+          <div class="field">
+            <label>Z</label>
+            <input type="number" id="c${id}_z" placeholder="0" oninput="render()">
+          </div>
+        </div>
+        <div class="field">
+          <label>Direction</label>
+          <select id="c${id}_dir" onchange="render()">
+            <option>NORTH</option>
+            <option>SOUTH</option>
+            <option>EAST</option>
+            <option>WEST</option>
+            <option>UP</option>
+            <option>DOWN</option>
+          </select>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ── SPAWNERS ────────────────────────────────
+  function addSpawner() {
+    spawners.push(sId++);
+    drawSpawners();
+    render();
+  }
+
+  function removeSpawner(id) {
+    spawners = spawners.filter(s => s !== id);
+    drawSpawners();
+    render();
+  }
+
+  function drawSpawners() {
+    const el = document.getElementById('spawners-list');
+    if (spawners.length === 0) {
+      el.innerHTML = '<div class="empty-state">No spawners yet.</div>';
+      return;
+    }
+    el.innerHTML = spawners.map((id, i) => `
+      <div class="entry-card">
+        <div class="entry-top">
+          <span class="entry-label">spawner[${i}]</span>
+          <button class="btn btn-remove" onclick="removeSpawner(${id})">✕ Remove</button>
+        </div>
+        <div class="grid-3" style="margin-bottom:10px">
+          <div class="field">
+            <label>X</label>
+            <input type="number" id="s${id}_x" placeholder="0" oninput="render()">
+          </div>
+          <div class="field">
+            <label>Y</label>
+            <input type="number" id="s${id}_y" placeholder="0" oninput="render()">
+          </div>
+          <div class="field">
+            <label>Z</label>
+            <input type="number" id="s${id}_z" placeholder="0" oninput="render()">
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Spawn Table</label>
+            <input type="text" id="s${id}_table" placeholder="lab_easy_mobs" oninput="render()">
+          </div>
+          <div class="field">
+            <label>Chance (0–1)</label>
+            <input type="number" id="s${id}_chance" placeholder="0.75" step="0.01" min="0" max="1" oninput="render()">
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ── HELPERS ─────────────────────────────────
+  function v(id)  { const e = document.getElementById(id); return e ? e.value : ''; }
+  function n(id)  { const x = v(id); return x === '' ? null : Number(x); }
+
+  // ── BUILD JSON OBJECT ────────────────────────
+  function build() {
+    const roomName      = v('roomName')      || '';
+    const structureType = v('structureType') || '';
+    const roomType      = v('roomType')      || '';
+    const weight        = n('weight');
+    const start         = v('start') === 'true';
+    const end           = v('end')   === 'true';
+    const sizeX         = n('sizeX');
+    const sizeY         = n('sizeY');
+    const sizeZ         = n('sizeZ');
+
+    const connectorData = connectors.map(id => ({
+      x:         n(`c${id}_x`) ?? 0,
+      y:         n(`c${id}_y`) ?? 0,
+      z:         n(`c${id}_z`) ?? 0,
+      direction: v(`c${id}_dir`) || 'NORTH'
+    }));
+
+    const spawnerData = spawners.map(id => ({
+      x:      n(`s${id}_x`)      ?? 0,
+      y:      n(`s${id}_y`)      ?? 0,
+      z:      n(`s${id}_z`)      ?? 0,
+      table:  v(`s${id}_table`)  || '',
+      chance: n(`s${id}_chance`) ?? 0
+    }));
+
+    return {
+      id:        roomName,
+      structure: `structures/${structureType}/${roomName}.nbt`,
+      type:      structureType,
+      room_type: roomType,
+      weight:    weight ?? 1.0,
+      start:     start,
+      end:       end,
+      size:      { x: sizeX ?? 0, y: sizeY ?? 0, z: sizeZ ?? 0 },
+      connectors: connectorData,
+      spawners:   spawnerData
+    };
+  }
+
+  // ── SYNTAX HIGHLIGHT ────────────────────────
+  function highlight(raw) {
+    return raw
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(
+        /("(?:\\u[0-9a-fA-F]{4}|\\[^u]|[^\\"])*"(?:\s*:)?|\b(?:true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+        match => {
+          if (/^"/.test(match)) {
+            return /:$/.test(match)
+              ? `<span class="jk">${match}</span>`
+              : `<span class="js">${match}</span>`;
+          }
+          if (/true|false/.test(match)) return `<span class="jb">${match}</span>`;
+          if (/null/.test(match))       return `<span class="jp">${match}</span>`;
+          return `<span class="jn">${match}</span>`;
+        }
+      );
+  }
+
+  // ── RENDER ──────────────────────────────────
+  function render() {
+    const obj = build();
+    const raw = JSON.stringify(obj, null, 2);
+    document.getElementById('json-output').innerHTML = highlight(raw);
+  }
+
+  // ── COPY ────────────────────────────────────
+  function copyJSON() {
+    const raw = JSON.stringify(build(), null, 2);
+    navigator.clipboard.writeText(raw).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = '✓ Copied!';
+      btn.classList.add('ok');
+      setTimeout(() => { btn.textContent = 'Copy JSON'; btn.classList.remove('ok'); }, 2000);
+    });
+  }
+
+  render();
+</script>
+</body>
+</html>
